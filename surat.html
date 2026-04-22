@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Menyurat - STIT Tunas Bangsa Banjarnegara</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="https://portal.stitusa.ac.id/asset/logo-stit.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://portal.stitusa.ac.id/asset/logo-stit.png">
+    <link rel="apple-touch-icon" href="https://portal.stitusa.ac.id/asset/logo-stit.png">
+    <script src="./surat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+
+        .preview-paper {
+            font-family: 'Plus Jakarta Sans';
+            aspect-ratio: 1/1.414;
+            background: #fff;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,.12);
+        }
+        
+
+        @media print {
+            .preview-paper {
+                aspect-ratio: auto !important;
+                background: #fff;
+                width: 210mm !important;
+                height: 297mm !important;
+            }
+            * {
+                box-shadow: none !important;
+            }
+            header, footer, .no-print, .toast-container, .modal-backdrop,
+            .tab-btn, .section-card, #previewActions, .modal-header-actions {
+                display: none !important;
+            }
+            
+            html, body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            #panelBuat, #krs-preview, #modalPreview {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            #preview-content, #modalContent {
+                display: block !important;
+                visibility: visible !important;
+                position: static !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0 40px !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: white !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            @page { size: A4; margin: 0 ; padding: 0; }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .toast-container {
+            position: fixed; top: 24px; right: 24px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto; padding: 14px 20px; border-radius: 16px; font-size: 13px;
+            font-weight: 600; box-shadow: 0 8px 30px -4px rgba(0,0,0,.15);
+            transform: translateX(120%); opacity: 0; transition: all .4s cubic-bezier(.4,0,.2,1);
+            max-width: 360px; display: flex; align-items: center; gap: 10px;
+        }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.toast-success { background: #059669; color: #fff; }
+        .toast.toast-error { background: #dc2626; color: #fff; }
+        .toast.toast-warning { background: #d97706; color: #fff; }
+        .toast.toast-info { background: #0f766e; color: #fff; }
+
+        .type-card {
+            transition: all .25s cubic-bezier(.4,0,.2,1);
+            border: 2px solid transparent; cursor: pointer; text-align: left; display: block; width: 100%;
+        }
+        .type-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px -2px rgba(0,0,0,.08); }
+        .type-card.selected { border-color: #059669; background-color: #ecfdf5; }
+        .type-card.selected .tc-icon { transform: scale(1.1); }
+        .tc-icon { transition: transform .25s ease; }
+
+        .tab-btn { transition: all .2s ease; }
+        .tab-btn.active { background-color: #059669; color: #fff; box-shadow: 0 4px 12px -2px rgba(5,150,105,.4); }
+
+        .field-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+        .error-msg { color: #ef4444; font-size: 10px; font-weight: 700; margin-top: 2px; margin-left: 4px; display: none; }
+        .error-msg.visible { display: block; }
+
+        .section-card {
+            background: #fff; border-radius: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+            border: 1px solid rgba(226,232,240,.8); padding: 1.5rem;
+        }
+
+        .modal-backdrop {
+            position: fixed; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(6px);
+            z-index: 1000; display: none; align-items: flex-start; justify-content: center;
+            padding: 24px; overflow-y: auto;
+        }
+        .modal-backdrop.show { display: flex; }
+
+        .hist-row { transition: background .15s ease; }
+        .hist-row:hover { background: #f8fafc; }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none; box-shadow: 0 0 0 3px rgba(5,150,105,.15); border-color: #059669 !important;
+        }
+
+        .type-grid-container {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        }
+        @media (min-width: 640px) { .type-grid-container { grid-template-columns: repeat(3, 1fr); } }
+
+        .letter-content {
+            font-size:11pt;
+            line-height: 1.5;
+            color: #000;
+        }
+
+        .letter-header-row {
+            display: block;
+            margin-bottom: 3pt;
+            font-size:11pt;
+        }
+
+        .letter-header-label {
+            display: inline-block;
+            width: 80px;
+            font-weight: normal;
+            font-size:11pt;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="modal-backdrop no-print" id="modalSurat" onclick="if(event.target===this)closeModal()">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-[900px] my-8 overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 no-print modal-header-actions">
+            <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-envelope-open-text mr-2 text-emerald-600"></i>Detail Surat</h3>
+            <div class="flex gap-2">
+                <button onclick="downloadPDF()" class="px-4 py-2 text-xs font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 active:scale-95 transition-all"><i class="fa-solid fa-file-pdf mr-1"></i>Download PDF</button>
+                <button onclick="closeModal()" class="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 active:scale-95 transition-all"><i class="fa-solid fa-xmark mr-1"></i>Tutup</button>
+            </div>
+        </div>
+        <div class="p-8 flex justify-center bg-slate-50 overflow-auto custom-scrollbar">
+            <div id="modalPreview" class="w-full flex justify-center"></div>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-[1500px] mx-auto p-4 md:p-8">
+    <header class="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 no-print">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <span class="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">Portal Surat</span>
+                <span class="bg-teal-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider">v1.0</span>
+            </div>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">Sistem Surat Menyurat</h1>
+            <p class="text-slate-500 font-medium mt-0.5">STIT Tunas Bangsa Banjarnegara — Pengelolaan Surat Menyurat</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="switchTab('buat')" id="tabBuat" class="tab-btn active px-5 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-600"><i class="fa-solid fa-pen-to-square mr-1.5"></i>Buat Surat</button>
+            <button onclick="switchTab('riwayat')" id="tabRiwayat" class="tab-btn px-5 py-2.5 text-sm font-bold rounded-xl border border-slate-200 text-slate-600"><i class="fa-solid fa-clock-rotate-left mr-1.5"></i>Riwayat<span id="riwayatBadge" class="ml-1.5 bg-slate-200 text-slate-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full hidden">0</span></button>
+        </div>
+    </header>
+
+    <div id="panelBuat">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div class="xl:col-span-4 space-y-6 no-print">
+                <section class="section-card">
+                    <h2 class="text-sm font-extrabold text-emerald-600 mb-5 uppercase tracking-widest flex items-center">
+                        <span class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center mr-3 text-emerald-600 font-bold text-xs">1</span>Jenis Surat
+                    </h2>
+                    <div id="typeGrid" class="type-grid-container"></div>
+                </section>
+
+                <section id="secDataSurat" class="section-card hidden">
+                    <h2 class="text-sm font-extrabold text-emerald-600 mb-5 uppercase tracking-widest flex items-center">
+                        <span class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center mr-3 text-emerald-600 font-bold text-xs">2</span>Data Surat
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Nomor Surat <span class="text-red-400">*</span></label>
+                                <input type="text" id="fNomor" oninput="this.value = this.value.toUpperCase(); syncPreview();clearErr('fNomor')" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border font-mono font-bold" placeholder="001/STIT.TB/KODE-SURAT/XII/2026">
+                                <p class="error-msg" id="err-fNomor">Nomor surat wajib diisi</p>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Tanggal</label>
+                                <input type="date" id="fTanggal" oninput="syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border">
+                            </div>
+                        </div>
+                        <div id="wrapHeaderKepada">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Lampiran</label>
+                                <input type="text" id="fLampiran" oninput="syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border" placeholder="1 berkas" value="-">
+                            </div>
+                            <div id="wrapSifat">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Sifat</label>
+                                <select id="fSifat" onchange="syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border appearance-none">
+                                    <option value="Biasa">Biasa</option><option value="Segera">Segera</option><option value="Sangat Segera">Sangat Segera</option><option value="Rahasia">Rahasia</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Perihal <span class="text-red-400">*</span></label>
+                            <input type="text" id="fPerihal" oninput="syncPreview();clearErr('fPerihal')" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border" placeholder="Keterangan Mahasiswa Aktif">
+                            <p class="error-msg" id="err-fPerihal">Perihal wajib diisi</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Kepada <span class="text-red-400">*</span></label>
+                            <textarea id="fKepada" rows="2" oninput="syncPreview();clearErr('fKepada')" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border resize-none" placeholder="Yth. Bapak/Ibu Dosen Pembimbing&#10;STIT Tunas Bangsa Banjarnegara&#10;di Tempat">Yth. Kepala Sekolah / Pimpinan &#10;Nama Sekolah Tujuan&#10;di Tempat</textarea>
+                            <p class="error-msg" id="err-fKepada">Kepada wajib diisi</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Salam Pembuka</label>
+                            <textarea id="fSalam" rows="2" oninput="syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border resize-none" placeholder="Dengan hormat.">Dengan hormat,</textarea>
+                        </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="secDataSubjek" class="section-card hidden">
+                    <h2 class="text-sm font-extrabold text-emerald-600 mb-5 uppercase tracking-widest flex items-center">
+                        <span class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center mr-3 text-emerald-600 font-bold text-xs">3</span>Data Subjek
+                    </h2>
+                    <div id="subjekFields" class="space-y-4"></div>
+                </section>
+
+                <section id="secTtd" class="section-card hidden">
+                    <h2 class="text-sm font-extrabold text-emerald-600 mb-5 uppercase tracking-widest flex items-center">
+                        <span class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center mr-3 text-emerald-600 font-bold text-xs">4</span>Penandatangan
+                    </h2>
+                    <div class="space-y-4">
+                            <!-- Penandatangan akan muncul di sini -->
+                            <div class="mb-4 text-sm text-gray-600 bg-yellow-50 border border-yellow-200 p-3 rounded">
+                                <strong>Ketentuan Penandatangan:</strong>
+                                
+                                <ol class="list-decimal ml-5 mt-2 space-y-3">
+                                    <li>
+                                        <span class="font-medium">Surat Aktif Kuliah:</span>
+                                        <div class="ml-2 text-gray-700">
+                                            - Ditandatangani oleh Ketua, atau<br>
+                                            - a.n. Ketua oleh Waket III Bidang Kemahasiswaan
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <span class="font-medium">Surat Izin Penelitian/Observasi:</span>
+                                        <div class="ml-2 text-gray-700">
+                                            - Ditandatangani oleh Ketua, atau<br>
+                                            - a.n. Ketua oleh Waket I Bidang Akademik
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <span class="font-medium">Pengajuan Judul Skripsi:</span>
+                                        <div class="ml-2 text-gray-700">
+                                            - Ditandatangani oleh Mahasiswa<br>
+                                        </div>
+                                    </li>
+                                </ol>
+                            </div>
+                        <div id="wrapInstansiTtd">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Instansi</label>
+                            <input type="text" id="fInstansiTtd" oninput="syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border" placeholder="STIT Tunas Bangsa Banjarnegara" value="STIT Tunas Bangsa Banjarnegara">
+                        </div>
+                        <div id="wrapJabatanBidang" class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Jabatan</label>
+                                <select id="fJabatanTtd" onchange="onJabatanChange();syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border appearance-none">
+                                    <option value="Ketua">Ketua</option>
+                                    <option value="a.n.Ketua">a.n.Ketua</option>
+                                    <option value="Wakil Ketua I">Wakil Ketua I</option>
+                                    <option value="Wakil Ketua II">Wakil Ketua II</option>
+                                    <option value="Wakil Ketua III">Wakil Ketua III</option>
+                                    <option value="Sekretaris">Sekretaris</option>
+                                    <option value="Kepala">Kepala</option>
+                                    <option value="Dosen">Dosen</option>
+                                    <option value="Mahasiswa">Mahasiswa</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Bidang</label>
+                                <input type="text" id="fBidangTtd" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'').replace(/\b\w/g,c=>c.toUpperCase());syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border" placeholder="Bidang Akademik/Kemahasiswaan/Keuangan">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Nama Penandatangan <span class="text-red-400">*</span></label>
+                            <input type="text" id="fNamaTtd" oninput="syncPreview();clearErr('fNamaTtd')" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border font-bold" placeholder="H. Abdul Haris FY, S.IP., M.Si">
+                            <p class="error-msg" id="err-fNamaTtd">Nama penandatangan wajib diisi</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">NIP / NIDN / NIM</label>
+                            <input type="text" id="fNipTtd" oninput="syncPreview()" class="w-full rounded-2xl border-slate-200 bg-slate-50 text-sm p-3 border font-mono" placeholder="NIP. 0000000 / NIDN. 0000 / NIM. 000000">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex gap-3">
+                        <button onclick="simpanSurat()" class="flex-1 px-6 py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl hover:bg-emerald-700 active:scale-[.97] transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2"><i class="fa-solid fa-floppy-disk"></i> Simpan Surat</button>
+                        <button onclick="resetForm()" class="px-5 py-3 text-sm font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded-2xl hover:bg-slate-200 active:scale-95 transition-all"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                </section>
+            </div>
+
+            <div class="xl:col-span-8">
+                <div class="bg-white/30 backdrop-blur-sm rounded-2xl p-4 lg:p-8 border border-white/60 shadow-inner flex flex-col items-center">
+                    <div class="w-full max-w-[794px] mb-4 flex justify-end gap-2 no-print" id="previewActions" style="display:none;">
+                        <button onclick="downloadPDFPreview()" class="px-4 py-2 text-xs font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 active:scale-95 transition-all shadow-md shadow-red-200"><i class="fa-solid fa-file-pdf mr-1"></i>Download PDF</button>
+                        <button onclick="printPreview()" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all shadow-md shadow-emerald-200"><i class="fa-solid fa-print mr-1"></i>Cetak</button>
+                    </div>
+                    <div id="krs-preview" class="preview-paper w-full max-w-full md:max-w-[794px] px-4 sm:px-6 md:px-[60px] pt-4 md:pt-[20px] text-[11px] sm:text-[10px] text-black overflow-auto custom-scrollbar relative mx-auto bg-white">
+                        <div id="preview-empty" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 rounded-sm">
+                            <div class="float-in text-center">
+                                <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center"><i class="fa-solid fa-envelope text-4xl text-slate-300"></i></div>
+                                <p class="text-slate-400 font-bold text-base mb-1">Belum Ada Surat</p>
+                                <p class="text-slate-300 text-sm max-w-[280px]">Pilih jenis surat dan isi data untuk melihat preview surat resmi di sini.</p>
+                            </div>
+                        </div>
+                        <div id="preview-content" class="hidden letter-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panelRiwayat" class="hidden no-print">
+        <div class="section-card">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div><h2 class="text-lg font-extrabold text-slate-800">Riwayat Surat</h2><p class="text-sm text-slate-400 mt-0.5">Daftar surat yang telah disimpan</p></div>
+                <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchRiwayat" oninput="renderRiwayat()" placeholder="Cari nomor, perihal, jenis..." class="pl-10 pr-4 py-2.5 text-sm rounded-2xl border border-slate-200 bg-slate-50 w-full sm:w-72 focus:ring-2 focus:ring-emerald-400"></div>
+            </div>
+            <div id="riwayatContent"></div>
+        </div>
+    </div>
+
+    <footer class="mt-12 mb-6 text-center no-print"><p class="text-[11px] text-slate-400 font-medium">Sistem Surat Menyurat — STIT Tunas Bangsa Banjarnegara &copy; <span id="footerYear"></span></p></footer>
+</div>
+
+</body>
+</html>
